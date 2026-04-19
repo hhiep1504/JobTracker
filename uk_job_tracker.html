@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK Job Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f9f9f7;--surface:#ffffff;--surface2:#f2f1ed;
+    --text:#1a1a18;--text2:#6b6a65;--text3:#9e9d98;
+    --border:#e0dfd8;--border2:#c8c7bf;
+    --blue-bg:#e8f0fe;--blue-text:#1a56a0;--blue-border:#b3ccf5;
+    --green-bg:#e6f4ea;--green-text:#1e6e38;
+    --amber-bg:#fef3e2;--amber-text:#7a4e00;
+    --purple-bg:#f0ebfe;--purple-text:#4a2d9c;
+    --red-bg:#fce8e8;--red-text:#8b1a1a;
+    --radius:10px;--radius-lg:14px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1a;--surface:#252523;--surface2:#2e2e2b;
+      --text:#f0efe8;--text2:#9e9d98;--text3:#6b6a65;
+      --border:#3a3a36;--border2:#4a4a46;
+      --blue-bg:#1a2e4a;--blue-text:#7ab3f5;--blue-border:#2a4a7a;
+      --green-bg:#1a3024;--green-text:#6ecf8a;
+      --amber-bg:#2e2010;--amber-text:#f0b040;
+      --purple-bg:#221840;--purple-text:#b09cf5;
+      --red-bg:#2e1414;--red-text:#f09090;
+    }
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;min-height:100vh;padding:0}
+  .app{max-width:680px;margin:0 auto;padding:1.5rem 1rem 4rem}
+  h1{font-size:22px;font-weight:normal;letter-spacing:-0.5px;color:var(--text)}
+  .sub{font-size:13px;color:var(--text2);margin-top:3px;font-family:monospace}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem}
+  .btn-add{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:0.2px}
+  .btn-add:hover{opacity:0.85}
+  .sync-bar{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:1rem;flex-wrap:wrap}
+  .sync-bar label{font-size:11px;color:var(--text2);font-family:monospace;text-transform:uppercase;letter-spacing:0.4px}
+  .sync-bar input{flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none}
+  .sync-bar input:focus{border-color:var(--border2)}
+  .btn-sync{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+  .sync-state{font-size:11px;color:var(--text2);font-family:monospace}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;text-align:center}
+  .stat-n{font-size:24px;font-weight:normal;color:var(--text)}
+  .stat-l{font-size:11px;color:var(--text2);margin-top:2px;font-family:monospace;text-transform:uppercase;letter-spacing:0.5px}
+  .reminder{background:var(--amber-bg);border:1px solid var(--amber-text);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--amber-text);margin-bottom:1rem}
+  .toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+  .toolbar input,.toolbar select{flex:1;min-width:130px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;outline:none}
+  .toolbar input:focus,.toolbar select:focus{border-color:var(--border2)}
+  .cards{display:flex;flex-direction:column;gap:8px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;transition:border-color .15s}
+  .card:hover{border-color:var(--border2)}
+  .card-role{font-size:14px;font-weight:bold;color:var(--text);margin-bottom:3px}
+  .card-company{font-size:13px;color:var(--text2);margin-bottom:6px}
+  .card-bottom{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-family:monospace}
+  .b-todo{background:var(--amber-bg);color:var(--amber-text)}
+  .b-applied{background:var(--green-bg);color:var(--green-text)}
+  .b-interview{background:var(--purple-bg);color:var(--purple-text)}
+  .b-offer{background:var(--green-bg);color:var(--green-text);font-weight:bold}
+  .b-rejected{background:var(--red-bg);color:var(--red-text)}
+  .salary{font-size:11px;color:var(--text3);font-family:monospace}
+  .card-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:12px}
+  .dl{font-size:12px;font-family:monospace;white-space:nowrap}
+  .dl-urgent{color:var(--red-text);font-weight:bold}
+  .dl-soon{color:var(--amber-text)}
+  .dl-ok{color:var(--green-text)}
+  .dl-none{color:var(--text3)}
+  .btn-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 4px;border-radius:4px;line-height:1}
+  .btn-del:hover{color:var(--red-text)}
+  .notes-preview{font-size:11px;color:var(--text3);font-style:italic;margin-top:3px}
+  .empty{text-align:center;padding:3rem 1rem;color:var(--text2);font-size:14px}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.5rem;width:100%;max-width:460px;max-height:90vh;overflow-y:auto}
+  .modal h2{font-size:16px;font-weight:normal;margin-bottom:1.25rem;letter-spacing:-0.3px}
+  .form-row{margin-bottom:0.9rem}
+  .form-row label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;font-family:monospace;text-transform:uppercase;letter-spacing:0.5px}
+  .form-row input,.form-row select,.form-row textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;outline:none}
+  .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--border2)}
+  .form-row textarea{height:70px;resize:vertical}
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem}
+  .btn-cancel{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit}
+  .btn-save{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:7px 18px;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn-save:hover{opacity:0.85}
+
+  @media(max-width:480px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .toolbar{flex-direction:column}
+    .toolbar input,.toolbar select{min-width:0}
+    .sync-bar{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>UK Job Tracker</h1>
+      <div class="sub">track your UK job applications</div>
+    </div>
+    <button class="btn-add" onclick="openModal()">+ Add application</button>
+  </div>
+
+  <div class="sync-bar">
+    <label for="sync-room">Sync ID</label>
+    <input id="sync-room" placeholder="vd: hoang-iphone-laptop" autocomplete="off">
+    <button class="btn-sync" onclick="connectSync()">Connect sync</button>
+    <span class="sync-state" id="sync-state">Local only</span>
+  </div>
+
+  <div id="reminder"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search company, role..." oninput="render()">
+    <select id="filter" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="todo">Not applied</option>
+      <option value="applied">Applied</option>
+      <option value="interview">Interview</option>
+      <option value="offer">Offer received</option>
+      <option value="rejected">Rejected</option>
+    </select>
+    <select id="sort" onchange="render()">
+      <option value="deadline">Sort by deadline</option>
+      <option value="date">Most recent</option>
+    </select>
+  </div>
+
+  <div class="cards" id="cards"></div>
+  <div id="mc"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+<script>
+const KEY='ukjobs_v1';
+const SYNC_KEY='ukjobs_sync_room';
+
+// Tao Firebase project rieng, sau do thay cac gia tri ben duoi.
+const FIREBASE_CONFIG={
+  apiKey:'REPLACE_WITH_YOUR_API_KEY',
+  authDomain:'REPLACE_WITH_YOUR_AUTH_DOMAIN',
+  projectId:'REPLACE_WITH_YOUR_PROJECT_ID',
+  storageBucket:'REPLACE_WITH_YOUR_STORAGE_BUCKET',
+  messagingSenderId:'REPLACE_WITH_YOUR_MESSAGING_SENDER_ID',
+  appId:'REPLACE_WITH_YOUR_APP_ID',
+};
+
+const STATUS={
+  todo:{label:'Not applied',cls:'b-todo'},
+  applied:{label:'Applied',cls:'b-applied'},
+  interview:{label:'Interview',cls:'b-interview'},
+  offer:{label:'Offer received',cls:'b-offer'},
+  rejected:{label:'Rejected',cls:'b-rejected'},
+};
+
+let jobsState=loadLocal();
+let db=null;
+let docRef=null;
+let unsubscribeSync=null;
+let lastFingerprint='';
+
+function loadLocal(){
+  try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return[];}
+}
+function saveLocal(jobs){localStorage.setItem(KEY,JSON.stringify(jobs));}
+
+function hasFirebaseConfig(){
+  return FIREBASE_CONFIG.apiKey&&!FIREBASE_CONFIG.apiKey.includes('REPLACE_WITH_YOUR');
+}
+
+function setSyncState(t){
+  document.getElementById('sync-state').textContent=t;
+}
+
+function initFirebase(){
+  if(!hasFirebaseConfig()||typeof firebase==='undefined')return;
+  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+  db=firebase.firestore();
+}
+
+function fingerprint(jobs){
+  return JSON.stringify(jobs);
+}
+
+function pushRemote(jobs){
+  if(!docRef)return;
+  const fp=fingerprint(jobs);
+  lastFingerprint=fp;
+  docRef.set({jobs,updatedAt:Date.now()},{merge:true}).catch(()=>{
+    setSyncState('Sync failed');
+  });
+}
+
+function saveAll(jobs,{sync=true}={}){
+  jobsState=jobs;
+  saveLocal(jobs);
+  if(sync)pushRemote(jobs);
+}
+
+function cleanRoomId(v){
+  return v.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,64);
+}
+
+function connectSync(){
+  const raw=document.getElementById('sync-room').value;
+  const room=cleanRoomId(raw);
+  if(!room){
+    alert('Nhap Sync ID de ket noi.');
+    return;
+  }
+  document.getElementById('sync-room').value=room;
+  localStorage.setItem(SYNC_KEY,room);
+
+  if(!db){
+    setSyncState('Local only (Firebase chua cau hinh)');
+    alert('Ban can cau hinh FIREBASE_CONFIG trong file HTML de bat dong bo cloud.');
+    return;
+  }
+
+  if(unsubscribeSync)unsubscribeSync();
+  setSyncState('Connecting...');
+  docRef=db.collection('job_tracker_rooms').doc(room);
+
+  unsubscribeSync=docRef.onSnapshot(snap=>{
+    if(!snap.exists){
+      pushRemote(jobsState);
+      setSyncState('Synced: '+room);
+      return;
+    }
+    const remote=Array.isArray((snap.data()||{}).jobs)?snap.data().jobs:[];
+    const remoteFp=fingerprint(remote);
+    if(remoteFp!==lastFingerprint){
+      jobsState=remote;
+      saveLocal(remote);
+      lastFingerprint=remoteFp;
+      render();
+    }
+    setSyncState('Synced: '+room);
+  },()=>{
+    setSyncState('Sync error');
+  });
+}
+
+function initSync(){
+  initFirebase();
+  const room=localStorage.getItem(SYNC_KEY)||'';
+  if(room){
+    document.getElementById('sync-room').value=room;
+    connectSync();
+  } else {
+    setSyncState(db?'Cloud ready':'Local only');
+  }
+}
+
+function daysUntil(d){
+  if(!d)return null;
+  return Math.ceil((new Date(d)-new Date(new Date().toDateString()))/(864e5));
+}
+function dlLabel(d){
+  const n=daysUntil(d);
+  if(n===null)return{text:'—',cls:'dl-none'};
+  if(n<0)return{text:'Expired',cls:'dl-urgent'};
+  if(n===0)return{text:'Today!',cls:'dl-urgent'};
+  if(n===1)return{text:'Tomorrow!',cls:'dl-urgent'};
+  if(n<=3)return{text:`${n}d left`,cls:'dl-urgent'};
+  if(n<=7)return{text:`${n}d left`,cls:'dl-soon'};
+  return{text:`${n}d left`,cls:'dl-ok'};
+}
+
+function render(){
+  const jobs=jobsState;
+  const q=document.getElementById('search').value.toLowerCase();
+  const fs=document.getElementById('filter').value;
+  const sort=document.getElementById('sort').value;
+
+  // stats
+  const s={total:jobs.length,active:0,interview:0,offer:0};
+  jobs.forEach(j=>{
+    if(j.status==='todo'||j.status==='applied')s.active++;
+    if(j.status==='interview')s.interview++;
+    if(j.status==='offer')s.offer++;
+  });
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-n">${s.total}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n">${s.active}</div><div class="stat-l">Active</div></div>
+    <div class="stat"><div class="stat-n">${s.interview}</div><div class="stat-l">Interview</div></div>
+    <div class="stat"><div class="stat-n">${s.offer}</div><div class="stat-l">Offer</div></div>
+  `;
+
+  // reminder
+  const urgent=jobs.filter(j=>j.status==='todo'&&daysUntil(j.deadline)!==null&&daysUntil(j.deadline)>=0&&daysUntil(j.deadline)<=3);
+  document.getElementById('reminder').innerHTML=urgent.length?
+    `<div class="reminder">⏰ Deadline soon: ${urgent.map(j=>`<b>${j.company}</b> (${dlLabel(j.deadline).text})`).join(', ')}</div>`:'';
+
+  // list
+  let list=jobs.filter(j=>{
+    const m=!q||j.company.toLowerCase().includes(q)||j.role.toLowerCase().includes(q)||(j.location||'').toLowerCase().includes(q);
+    return m&&(!fs||j.status===fs);
+  });
+  if(sort==='deadline'){
+    list.sort((a,b)=>(daysUntil(a.deadline)??9999)-(daysUntil(b.deadline)??9999));
+  } else {
+    list.sort((a,b)=>new Date(b.created)-new Date(a.created));
+  }
+
+  const el=document.getElementById('cards');
+  if(!list.length){el.innerHTML='<div class="empty">No applications yet. Click "+ Add application" to get started!</div>';return;}
+  el.innerHTML=list.map(j=>{
+    const si=STATUS[j.status]||STATUS.todo;
+    const dl=dlLabel(j.deadline);
+    return `<div class="card" onclick="openModal(${j.id})">
+      <div>
+        <div class="card-role">${j.role}</div>
+        <div class="card-company">${j.company}${j.location?' · '+j.location:''}</div>
+        <div class="card-bottom">
+          <span class="badge ${si.cls}">${si.label}</span>
+          ${j.salary?`<span class="salary">${j.salary}</span>`:''}
+        </div>
+        ${j.notes?`<div class="notes-preview">${j.notes.substring(0,70)}${j.notes.length>70?'…':''}</div>`:''}
+      </div>
+      <div class="card-right">
+        <span class="dl ${dl.cls}">${dl.text}</span>
+        <button class="btn-del" onclick="event.stopPropagation();del(${j.id})" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function del(id){
+  if(!confirm('Delete this application?'))return;
+  const jobs=jobsState.filter(j=>j.id!==id);
+  saveAll(jobs);
+  render();
+}
+
+function openModal(id){
+  const jobs=jobsState;
+  const job=id?jobs.find(j=>j.id===id):null;
+  document.getElementById('mc').innerHTML=`<div class="modal-bg" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${job?'Edit application':'New application'}</h2>
+      <div class="form-row"><label>Company *</label><input id="m-co" value="${job?esc(job.company):''}" placeholder="Monzo, BBC, HSBC..."></div>
+      <div class="form-row"><label>Role *</label><input id="m-role" value="${job?esc(job.role):''}" placeholder="UX Designer, Product Manager..."></div>
+      <div class="form-row"><label>Location</label><input id="m-loc" value="${job?esc(job.location||''):''}" placeholder="London, Remote, Manchester..."></div>
+      <div class="form-row"><label>Status</label><select id="m-st">
+        ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}"${job&&job.status===k?' selected':''}>${v.label}</option>`).join('')}
+      </select></div>
+      <div class="form-row"><label>Application deadline</label><input type="date" id="m-dl" value="${job&&job.deadline?job.deadline:''}"></div>
+      <div class="form-row"><label>Salary</label><input id="m-sal" value="${job?esc(job.salary||''):''}" placeholder="£45,000 – £60,000"></div>
+      <div class="form-row"><label>Link / Notes</label><textarea id="m-notes">${job?esc(job.notes||''):''}</textarea></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveJob(${job?job.id:'null'})">${job?'Save':'Add'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function esc(s){return s.replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+function closeModal(e){
+  if(!e||e.target.classList.contains('modal-bg'))
+    document.getElementById('mc').innerHTML='';
+}
+
+function saveJob(id){
+  const co=document.getElementById('m-co').value.trim();
+  const role=document.getElementById('m-role').value.trim();
+  if(!co||!role){alert('Please enter a company name and role!');return;}
+  const jobs=[...jobsState];
+  const data={
+    company:co,role,
+    location:document.getElementById('m-loc').value.trim(),
+    status:document.getElementById('m-st').value,
+    deadline:document.getElementById('m-dl').value,
+    salary:document.getElementById('m-sal').value.trim(),
+    notes:document.getElementById('m-notes').value.trim(),
+  };
+  if(id&&id!='null'){
+    const j=jobs.find(x=>x.id===id);
+    if(j)Object.assign(j,data);
+  } else {
+    data.id=Date.now();
+    data.created=new Date().toISOString().split('T')[0];
+    jobs.unshift(data);
+  }
+  saveAll(jobs);
+  document.getElementById('mc').innerHTML='';
+  render();
+}
+
+initSync();
+render();
+</script>
+</body>
+</html>
